@@ -5,3 +5,31 @@ full: Memcache client library
 description: Provides an API to access a memcache installation.
 list: dev
 type: library
+homepage: https://www.horde.org/libraries/Horde_Memcache
+authors:
+  -
+    name: Michael Slusarz
+    user: slusarz
+    email: slusarz@horde.org
+    active: true
+    role: lead
+version:
+  release: 2.1.2
+  api: 1.1.0
+state:
+  release: stable
+  api: stable
+license:
+  identifier: LGPL-2.1
+  uri: http://www.horde.org/licenses/lgpl21
+dependencies:
+  required:
+    php: ^5.3 || ^7
+    pear:
+      pear.horde.org/Horde_Exception: ^2
+    ext:
+      hash: '*'
+  optional:
+    pear:
+      pecl.php.net/memcache: ^2
+      pecl.php.net/memcached: '*'
