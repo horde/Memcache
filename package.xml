@@ -10,7 +10,7 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2017-10-17</date>
+ <date>2017-10-27</date>
  <version>
   <release>2.1.2</release>
   <api>1.1.0</api>
@@ -24,6 +24,13 @@
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
+   <dir name="doc">
+    <dir name="Horde">
+     <dir name="Memcache">
+      <file name="CHANGES" role="doc" />
+     </dir> <!-- /doc/Horde/Memcache -->
+    </dir> <!-- /doc/Horde -->
+   </dir> <!-- /doc -->
    <dir name="lib">
     <dir name="Horde">
      <dir name="Memcache">
@@ -72,6 +79,7 @@
  </dependencies>
  <phprelease>
   <filelist>
+   <install as="CHANGES" name="doc/Horde/Memcache/CHANGES" />
    <install as="Horde/Memcache.php" name="lib/Horde/Memcache.php" />
    <install as="Horde/Memcache/Exception.php" name="lib/Horde/Memcache/Exception.php" />
    <install as="LICENSE" name="LICENSE" />
@@ -411,7 +419,7 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2017-10-17</date>
+   <date>2017-10-27</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
    </notes>
