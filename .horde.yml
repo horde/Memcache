@@ -31,5 +31,9 @@ dependencies:
       hash: '*'
   optional:
     pear:
-      pecl.php.net/memcache: ^2
-      pecl.php.net/memcached: '*'
+      pecl.php.net/memcache:
+        version: ^2
+        providesextension: memcache
+      pecl.php.net/memcached:
+        version: '*'
+        providesextension: memcached
