@@ -2,7 +2,7 @@
 id: Memcache
 name: Memcache
 full: Memcache client library
-description: Provides an API to access a memcache installation.
+description: A library for accessing a memcache installation.
 list: dev
 type: library
 homepage: https://www.horde.org/libraries/Horde_Memcache
