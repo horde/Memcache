@@ -202,7 +202,7 @@ class Horde_Memcache implements Serializable
 
         if (isset($this->_params['logger'])) {
             $this->_logger = $this->_params['logger'];
-            $this->_logger->log('Connected to the following memcache servers:' . implode($this->_servers, ', '), 'DEBUG');
+            $this->_logger->log('Connected to the following memcache servers:' . implode(', ', $this->_servers), 'DEBUG');
         }
     }
 
