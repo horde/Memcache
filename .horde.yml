@@ -14,26 +14,22 @@ authors:
     active: false
     role: lead
 version:
-  release: 2.1.2
+  release: 3.0.0alpha1
   api: 1.1.0
 state:
-  release: stable
+  release: alpha
   api: stable
 license:
   identifier: LGPL-2.1
   uri: http://www.horde.org/licenses/lgpl21
 dependencies:
   required:
-    php: ^5.3 || ^7
-    pear:
-      pear.horde.org/Horde_Exception: ^2
+    php: ^7
+    composer:
+      horde/exception: ^3
     ext:
       hash: '*'
   optional:
-    pear:
-      pecl.php.net/memcache:
-        version: ^2
-        providesextension: memcache
-      pecl.php.net/memcached:
-        version: '*'
-        providesextension: memcached
+    ext:
+      memcache: ^2
+      memcached: '*'
