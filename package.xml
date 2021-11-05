@@ -47,8 +47,8 @@
   <required>
    <php>
     <min>7.0.0</min>
-    <max>8.0.0alpha1</max>
-    <exclude>8.0.0alpha1</exclude>
+    <max>9.0.0alpha1</max>
+    <exclude>9.0.0alpha1</exclude>
    </php>
    <pearinstaller>
     <min>1.7.0</min>
@@ -505,7 +505,7 @@
    </version>
    <stability>
     <release>alpha</release>
-    <api>alpha</api>
+    <api>stable</api>
    </stability>
    <date>2021-07-04</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>

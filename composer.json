@@ -43,6 +43,5 @@
         "psr-4": {
             "Horde\\Memcache\\Test\\": "test/"
         }
-    },
-    "minimum-stability": "dev"
+    }
 }
