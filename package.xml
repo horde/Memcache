@@ -12,7 +12,7 @@
  </lead>
  <date>2021-07-04</date>
  <version>
-  <release>3.0.0alpha2</release>
+  <release>3.0.0alpha3</release>
   <api>1.1.0</api>
  </version>
  <stability>
@@ -78,32 +78,6 @@
   </filelist>
  </phprelease>
  <changelog>
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
   <release>
    <version>
     <release>1.0.0alpha1</release>
@@ -505,7 +479,23 @@
    </version>
    <stability>
     <release>alpha</release>
-    <api>stable</api>
+    <api>alpha</api>
+   </stability>
+   <date>2021-07-04</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [rla] Converted to namespaced code, enabled PHP8 compatibility
+* |+
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>3.0.0alpha3</release>
+    <api>1.1.0</api>
+   </version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api>
    </stability>
    <date>2021-07-04</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>

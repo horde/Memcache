@@ -14,7 +14,7 @@ authors:
     active: false
     role: lead
 version:
-  release: 3.0.0alpha2
+  release: 3.0.0alpha3
   api: 1.1.0
 state:
   release: alpha
