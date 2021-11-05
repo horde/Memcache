@@ -1,5 +1,4 @@
 {
-    "minimum-stability": "dev",
     "name": "horde/memcache",
     "description": "Memcache client library",
     "type": "library",
@@ -12,7 +11,7 @@
             "role": "lead"
         }
     ],
-    "time": "2021-07-04",
+    "time": "2021-11-05",
     "repositories": [
         {
             "type": "composer",
@@ -20,11 +19,14 @@
         }
     ],
     "require": {
-        "php": "^7",
-        "horde/exception": "^3 || dev-FRAMEWORK_6_0",
+        "php": "^7 || ^8",
+        "horde/exception": "^3",
         "ext-hash": "*"
     },
-    "require-dev": {},
+    "require-dev": {
+        "horde/test": "^3",
+        "horde/log": "^3"
+    },
     "suggest": {
         "ext-memcache": "^2",
         "ext-memcached": "*"
@@ -32,6 +34,15 @@
     "autoload": {
         "psr-0": {
             "Horde_Memcache": "lib/"
+        },
+        "psr-4": {
+            "Horde\\Memcache\\": "src/"
         }
-    }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Horde\\Memcache\\Test\\": "test/"
+        }
+    },
+    "minimum-stability": "dev"
 }

@@ -24,7 +24,7 @@ license:
   uri: http://www.horde.org/licenses/lgpl21
 dependencies:
   required:
-    php: ^7
+    php: ^7 || ^8
     composer:
       horde/exception: ^3
     ext:
@@ -33,3 +33,7 @@ dependencies:
     ext:
       memcache: ^2
       memcached: '*'
+  dev:
+    composer:
+      horde/test: ^3
+      horde/log: ^3
