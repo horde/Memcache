@@ -51,7 +51,6 @@ jobs:
         ## For unclear reasons, github action fails randomly if we do not install twice or add a requirement.
         COMPOSER_ROOT_VERSION=dev-FRAMEWORK_6_0 composer config minimum-stability dev
         COMPOSER_ROOT_VERSION=dev-FRAMEWORK_6_0 composer install
-        COMPOSER_ROOT_VERSION=dev-FRAMEWORK_6_0 composer require horde/cli "dev-FRAMEWWORK_6_0 || ^3"
     - name: Setup problem matchers for PHPUnit
       run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
     - name: run phpunit
