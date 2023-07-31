@@ -573,6 +573,27 @@ class Horde_Memcache implements Serializable
 
     /* Serializable methods. */
 
+    public function __serialize()
+    {
+        return array(
+            self::VERSION,
+            $this->_params
+        );
+    }
+
+    public function __unserialize($data)
+    {
+        if (!is_array($data) ||
+            !isset($data[0]) ||
+            ($data[0] != self::VERSION)) {
+            throw new Exception('Cache version change');
+        }
+
+        $this->_params = $data[1];
+
+        $this->_init();
+    }
+
     /**
      * Serialize.
      *
