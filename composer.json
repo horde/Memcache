@@ -14,23 +14,17 @@
     "version": "2.1.2",
     "time": "2017-11-11",
     "repositories": [
-        {
-            "type": "pear",
-            "url": "https://pear.horde.org"
-        }
     ],
     "require": {
         "php": "^5.3 || ^7",
-        "pear-pear.horde.org/Horde_Exception": "^2",
+        "horde/exception": "^2",
         "ext-hash": "*"
     },
     "suggest": {
-        "pear-pecl.php.net/memcache": "^2",
-        "pear-pecl.php.net/memcached": "*"
+        "ext/memcache": "^2",
+        "ext/memcached": "*"
     },
     "replace": {
-        "pear-pear.horde.org/Horde_Memcache": "2.*",
-        "pear-horde/Horde_Memcache": "2.*"
     },
     "autoload": {
         "psr-0": {
