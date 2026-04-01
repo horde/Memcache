@@ -17,14 +17,27 @@ declare(strict_types=1);
 
 namespace Horde\Memcache;
 
-use Serializable;
-use Horde_Log_Logger;
+use Horde\Memcache\Exception\ConnectionException;
+use Horde\Memcache\Exception\DeserializationException;
+use Horde\Memcache\Exception\SerializationException;
+use Horde\Memcache\HordeMemcacheInterface;
 use Memcache;
 use Memcached;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Psr\SimpleCache\CacheInterface;
+use Serializable;
+use DateInterval;
+use DateTimeImmutable;
+use Throwable;
 
 /**
  * This class provides an API or Horde code to interact with a centrally
  * configured memcache installation.
+ *
+ * Implements two disjunct interfaces:
+ * - PSR-16 SimpleCache\CacheInterface (standard cache operations)
+ * - HordeMemcacheInterface (Horde-specific extensions)
  *
  * memcached website: http://www.danga.com/memcached/
  *
@@ -35,7 +48,7 @@ use Memcached;
  * @license  http://www.horde.org/licenses/lgpl21 LGPL 2.1
  * @package  Memcache
  */
-class MemcacheApi implements Serializable
+class MemcacheApi implements Serializable, CacheInterface, HordeMemcacheInterface
 {
     /**
      * The number of bits reserved by PHP's memcache layer for internal flag
@@ -67,38 +80,28 @@ class MemcacheApi implements Serializable
 
     /**
      * Locked keys.
-     *
-     * @var array
      */
-    protected $locks = [];
+    protected array $locks = [];
 
     /**
      * Logger instance.
-     *
-     * @var Horde_Log_Logger
      */
-    protected Horde_Log_Logger $logger;
+    protected LoggerInterface $logger;
 
     /**
      * Memcache object.
-     *
-     * @var Memcache|Memcached
      */
-    protected $memcache;
+    protected Memcache|Memcached $memcache;
 
     /**
      * A list of items known not to exist.
-     *
-     * @var array
      */
-    protected $noexist = [];
+    protected array $noexist = [];
 
     /**
      * Memcache defaults.
-     *
-     * @var array
      */
-    protected $params = [
+    protected array $params = [
         'compression' => false,
         'hostspec' => ['localhost'],
         'large_items' => true,
@@ -109,41 +112,27 @@ class MemcacheApi implements Serializable
 
     /**
      * The list of active servers.
-     *
-     * @var array
      */
-    protected $servers = [];
+    protected array $servers = [];
 
     /**
      * Constructor.
      *
-     * @param array $params  Configuration parameters:
-     *   - compression: (boolean) Compress data inside memcache?
-     *                  DEFAULT: false
-     *   - c_threshold: (integer) The minimum value length before attempting
-     *                  to compress.
-     *                  DEFAULT: none
-     *   - hostspec: (array) The memcached host(s) to connect to.
-     *                  DEFAULT: 'localhost'
-     *   - large_items: (boolean) Allow storing large data items (larger than
-     *                  Horde_Memcache::MAX_SIZE)? Currently not supported with
-     *                  memcached extension.
-     *                  DEFAULT: true
-     *   - persistent: (boolean) Use persistent DB connections?
-     *                 DEFAULT: false
-     *   - prefix: (string) The prefix to use for the memcache keys.
-     *             DEFAULT: 'horde'
-     *   - port: (array) The port(s) memcache is listening on. Leave empty
-     *           if using UNIX sockets.
-     *           DEFAULT: 11211
-     *   - weight: (array) The weight(s) to use for each memcached host.
-     *             DEFAULT: none (equal weight to all servers)
+     * @param Config|array $config  Configuration object or legacy array.
+     * @param LoggerInterface $logger  PSR-3 logger instance.
      *
-     * @throws MemcacheException
+     * @throws ConnectionException
      */
-    public function __construct(array $params = [])
+    public function __construct(Config|array $config = new Config(), LoggerInterface $logger = new NullLogger())
     {
-        $this->params = array_merge($this->params, $params);
+        $this->logger = $logger;
+
+        // Convert array to Config if needed (legacy compatibility)
+        if (is_array($config)) {
+            $config = Config::fromArray($config);
+        }
+
+        $this->params = $config->toArray();
         $this->init();
     }
 
@@ -160,7 +149,6 @@ class MemcacheApi implements Serializable
             } else {
                 $this->memcache = new Memcached('hordememcache');
             }
-            $this->params['large_items'] = false;
             $this->memcache->setOptions([
                 Memcached::OPT_COMPRESSION => $this->params['compression'],
                 Memcached::OPT_DISTRIBUTION => Memcached::DISTRIBUTION_CONSISTENT,
@@ -201,7 +189,14 @@ class MemcacheApi implements Serializable
 
         /* Check if any of the connections worked. */
         if (empty($this->servers)) {
-            throw new MemcacheException('Could not connect to any defined memcache servers.');
+            $this->logger->critical('Could not connect to any memcache servers', [
+                'hostspec' => $this->params['hostspec'],
+                'port' => $this->params['port'] ?? [],
+            ]);
+            throw new ConnectionException(
+                'Could not connect to any defined memcache servers.',
+                $this->params['hostspec']
+            );
         }
 
         if ($this->memcache instanceof Memcache
@@ -209,10 +204,11 @@ class MemcacheApi implements Serializable
             $this->memcache->setCompressThreshold($this->params['c_threshold']);
         }
 
-        if (isset($this->params['logger'])) {
-            $this->logger = $this->params['logger'];
-            $this->logger->log('Connected to the following memcache servers:' . implode(', ', $this->servers), 'DEBUG');
-        }
+        $this->logger->info('Connected to memcache servers', [
+            'servers' => $this->servers,
+            'backend' => get_class($this->memcache),
+            'persistent' => $this->params['persistent'],
+        ]);
     }
 
     /**
@@ -226,45 +222,242 @@ class MemcacheApi implements Serializable
     }
 
     /**
-     * Delete a key.
+     * Delete with timeout (delayed deletion).
      *
-     * @see Memcache::delete()
+     * @implements HordeMemcacheInterface
+     *
+     * Horde Extended API: Blocks add() operations on this key for the
+     * specified timeout period after deletion.
+     *
+     * Implementation:
+     * - Memcache extension: Uses native delete($key, $timeout)
+     * - Memcached extension: Sets key to null with TTL (workaround)
      *
      * @param string $key       The key.
-     * @param integer $timeout  Expiration time in seconds.
+     * @param int $timeout      Timeout in seconds (blocks add() for this duration).
      *
-     * @return boolean  True on success.
+     * @return bool  True on success.
      */
-    public function delete(string $key, int $timeout = 0): bool
+    public function deleteDelayed(string $key, int $timeout = 0): bool
     {
-        return isset($this->noexist[$key])
-            ? false
-            : $this->memcache->delete($this->_key($key), $timeout);
+        if (isset($this->noexist[$key])) {
+            return false;
+        }
+
+        if ($this->memcache instanceof Memcached) {
+            // Memcached doesn't support delete timeout, so we set the key
+            // to null with a TTL as a workaround to block the key
+            if ($timeout > 0) {
+                return $this->memcache->set($this->_key($key), null, $timeout);
+            }
+            return $this->memcache->delete($this->_key($key));
+        }
+
+        // Memcache extension supports native timeout
+        return $this->memcache->delete($this->_key($key), $timeout);
+    }
+
+    // ============================================================
+    // PSR-16 Simple Cache Interface
+    // ============================================================
+
+    /**
+     * Fetches a value from the cache.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * PSR-16: Returns default value on miss. Does NOT support oversized items.
+     * For large item support, use getLarge() instead.
+     *
+     * @param string $key      The unique key of this item in the cache.
+     * @param mixed  $default  Default value to return if the key does not exist.
+     *
+     * @return mixed  The value of the item from the cache, or $default in case of cache miss.
+     */
+    public function get(string $key, mixed $default = null): mixed
+    {
+        $result = $this->fetchSingleStandard($key);
+        return $result === false ? $default : $result;
     }
 
     /**
-     * Get data associated with a key.
+     * Persists data in the cache, uniquely referenced by a key with an optional expiration TTL time.
      *
-     * @see Memcache::get()
+     * @implements CacheInterface (PSR-16)
      *
-     * @param string|string[] $keys  The key or an array of keys.
+     * PSR-16: Fails on items >1MB (no automatic splitting).
+     * For large item support, use setLarge() instead.
      *
-     * @return mixed  The string/array on success (return type is the type of
-     *                $keys), false on failure.
+     * @param string                $key    The key of the item to store.
+     * @param mixed                 $value  The value of the item to store.
+     * @param null|int|DateInterval $ttl   Optional. The TTL value of this item.
+     *
+     * @return bool  True on success and false on failure.
      */
-    public function get($keys)
+    public function set(string $key, mixed $value, int|DateInterval|null $ttl = null): bool
+    {
+        $expire = $this->convertTtl($ttl);
+        $serialized = $this->serializeValue($value, $key);
+
+        // PSR-16 version does NOT handle oversized items
+        if (strlen($serialized) > self::MAX_SIZE) {
+            return false;
+        }
+
+        $mc_key = $this->_key($key);
+        $result = $this->memcache->set($mc_key, $serialized, $expire);
+
+        if ($result !== false) {
+            unset($this->noexist[$key]);
+        }
+
+        return $result !== false;
+    }
+
+    /**
+     * Delete an item from the cache by its unique key.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * PSR-16: No timeout parameter. For delayed deletion, use deleteDelayed() instead.
+     *
+     * @param string $key  The unique cache key of the item to delete.
+     *
+     * @return bool  True if the item was successfully removed. False if there was an error.
+     */
+    public function delete(string $key): bool
+    {
+        return $this->deleteDelayed($key, 0);
+    }
+
+    /**
+     * Wipes clean the entire cache's keys.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * @return bool  True on success and false on failure.
+     */
+    public function clear(): bool
+    {
+        $this->flush();
+        return true;
+    }
+
+    /**
+     * Obtains multiple cache items by their unique keys.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * PSR-16: Returns iterable with default values for missing keys.
+     * Does NOT support oversized items. For large item support, use getItems() instead.
+     *
+     * @param iterable $keys     A list of keys that can obtained in a single operation.
+     * @param mixed    $default  Default value to return for keys that do not exist.
+     *
+     * @return iterable  A list of key => value pairs.
+     */
+    public function getMultiple(iterable $keys, mixed $default = null): iterable
+    {
+        $results = [];
+        foreach ($keys as $key) {
+            $results[$key] = $this->get($key, $default);
+        }
+        return $results;
+    }
+
+    /**
+     * Persists a set of key => value pairs in the cache, with an optional TTL.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * PSR-16: Fails on items >1MB (no automatic splitting).
+     *
+     * @param iterable              $values  A list of key => value pairs for a multiple-set operation.
+     * @param null|int|DateInterval $ttl    Optional. The TTL value of this item.
+     *
+     * @return bool  True on success and false on failure.
+     */
+    public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
+    {
+        $success = true;
+        foreach ($values as $key => $value) {
+            $success = $this->set($key, $value, $ttl) && $success;
+        }
+        return $success;
+    }
+
+    /**
+     * Deletes multiple cache items in a single operation.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * @param iterable $keys  A list of string-based keys to be deleted.
+     *
+     * @return bool  True if the items were successfully removed. False if there was an error.
+     */
+    public function deleteMultiple(iterable $keys): bool
+    {
+        $success = true;
+        foreach ($keys as $key) {
+            $success = $this->delete($key) && $success;
+        }
+        return $success;
+    }
+
+    /**
+     * Determines whether an item is present in the cache.
+     *
+     * @implements CacheInterface (PSR-16)
+     *
+     * @param string $key  The cache item key.
+     *
+     * @return bool
+     */
+    public function has(string $key): bool
+    {
+        return $this->fetchSingleStandard($key) !== false;
+    }
+
+    /**
+     * Get single item with large item support.
+     *
+     * @implements HordeMemcacheInterface
+     *
+     * Horde Extended API: Mirrors setLarge() - automatically reassembles
+     * items >1MB that were split across multiple keys (key, key_s1, key_s2, etc.).
+     *
+     * @param string $key  Cache key.
+     *
+     * @return mixed  Value or false on miss.
+     */
+    public function getLarge(string $key): mixed
+    {
+        $result = $this->getItems([$key]);
+        return $result[$key];
+    }
+
+    /**
+     * Get multiple items (PSR-6 compatible signature).
+     *
+     * @implements HordeMemcacheInterface
+     *
+     * Horde Extended API: Returns array of raw values for given keys.
+     * Each value supports large item reassembly.
+     *
+     * Signature compatible with PSR-6 getItems() but returns raw values
+     * instead of CacheItemInterface objects. Can be used as building block
+     * for PSR-6 adapter.
+     *
+     * @param array $keys  Array of cache keys.
+     *
+     * @return array  ['key1' => value1, 'key2' => value2, 'key3' => false]
+     */
+    public function getItems(array $keys): array
     {
         $flags = null;
         $key_map = $missing_parts = $os = $out_array = [];
-        $ret_array = true;
 
-        if (!is_array($keys)) {
-            $keys = [$keys];
-            $ret_array = false;
-        }
-        $search_keys = $keys;
-
-        foreach ($search_keys as $v) {
+        foreach ($keys as $v) {
             $key_map[$v] = (string) $this->_key($v);
         }
 
@@ -274,43 +467,96 @@ class MemcacheApi implements Serializable
             $res = $this->memcache->get(array_values($key_map), $flags);
         }
         if ($res === false) {
-            return false;
+            // Return array with all keys as false
+            return array_fill_keys($keys, false);
         }
 
         /* Check to see if we have any oversize items we need to get. */
         if (!empty($this->params['large_items'])) {
-            foreach ($key_map as $key => $val) {
-                $part_count = isset($flags[$val])
-                    ? ($flags[$val] >> self::FLAGS_RESERVED) - 1
-                    : -1;
+            if ($this->memcache instanceof Memcached) {
+                // Memcached: Check for metadata keys to detect chunked items
+                $meta_keys = [];
+                foreach ($keys as $key) {
+                    $meta_keys[$key] = $this->_key($key . ':meta');
+                }
+                $meta_res = $this->memcache->getMulti(array_values($meta_keys));
 
-                switch ($part_count) {
-                    case -1:
-                        /* Ignore. */
-                        unset($res[$val]);
-                        break;
+                // Process chunked items
+                if ($meta_res !== false) {
+                    foreach ($keys as $key) {
+                        $meta_key = $meta_keys[$key];
+                        if (isset($meta_res[$meta_key]) && is_int($meta_res[$meta_key])) {
+                            // This is a chunked item
+                            $chunk_count = $meta_res[$meta_key];
+                            $data = '';
 
-                    case 0:
-                        /* Not an oversize part. */
-                        break;
+                            // Fetch all chunks
+                            $chunk_keys = [];
+                            for ($i = 0; $i < $chunk_count; ++$i) {
+                                $chunk_keys[] = $this->_key($key . ':chunk:' . $i);
+                            }
+                            $chunks = $this->memcache->getMulti($chunk_keys);
 
-                    default:
-                        $os[$key] = $this->_getOSKeyArray($key, $part_count);
-                        foreach ($os[$key] as $val2) {
-                            $missing_parts[] = $key_map[$val2] = $this->_key($val2);
+                            if ($chunks === false) {
+                                // Chunk retrieval failed - delete corrupted item
+                                $this->deleteDelayed($key, 0);
+                                $this->noexist[$key] = true;
+                                continue;
+                            }
+
+                            // Reassemble chunks
+                            for ($i = 0; $i < $chunk_count; ++$i) {
+                                $chunk_key = $this->_key($key . ':chunk:' . $i);
+                                if (!isset($chunks[$chunk_key])) {
+                                    // Missing chunk - delete corrupted item
+                                    $this->deleteDelayed($key, 0);
+                                    $this->noexist[$key] = true;
+                                    continue 2;
+                                }
+                                $data .= $chunks[$chunk_key];
+                            }
+
+                            // Store reassembled data
+                            $res[$key_map[$key]] = $data;
                         }
-                        break;
+                    }
                 }
-            }
+            } else {
+                // Memcache: Use flags-based approach (original implementation)
+                foreach ($key_map as $key => $val) {
+                    $part_count = isset($flags[$val])
+                        ? ($flags[$val] >> self::FLAGS_RESERVED) - 1
+                        : -1;
 
-            if (!empty($missing_parts)) {
-                if (($res2 = $this->memcache->get($missing_parts)) === false) {
-                    return false;
+                    switch ($part_count) {
+                        case -1:
+                            /* Ignore. */
+                            unset($res[$val]);
+                            break;
+
+                        case 0:
+                            /* Not an oversize part. */
+                            break;
+
+                        default:
+                            $os[$key] = $this->_getOSKeyArray($key, $part_count);
+                            foreach ($os[$key] as $val2) {
+                                $missing_parts[] = $key_map[$val2] = $this->_key($val2);
+                            }
+                            break;
+                    }
                 }
 
-                /* $res should now contain the same results as if we had
-                 * run a single get request with all keys above. */
-                $res = array_merge($res, $res2);
+                if (!empty($missing_parts)) {
+                    if (($res2 = $this->memcache->get($missing_parts)) === false) {
+                        // Return array with all keys as false
+                        return array_fill_keys($keys, false);
+                    }
+
+                    /* $res should now contain the same results as if we had
+                     * run a single get request with all keys above. */
+                    $res = array_merge($res, $res2);
+                }
             }
         }
 
@@ -329,20 +575,18 @@ class MemcacheApi implements Serializable
                         if (isset($res[$key_map[$v]])) {
                             $data .= $res[$key_map[$v]];
                         } else {
-                            $this->delete($k);
+                            $this->deleteDelayed($k, 0);
                             continue 2;
                         }
                     }
                 }
-                $out_array[$k] = @unserialize($data);
+                $out_array[$k] = $this->unserializeValue($data, $k);
             } elseif (isset($os[$k]) && !isset($res[$key_map[$k]])) {
-                $this->delete($k);
+                $this->deleteDelayed($k, 0);
             }
         }
 
-        return $ret_array
-            ? $out_array
-            : reset($out_array);
+        return $out_array;
     }
 
     /**
@@ -351,14 +595,28 @@ class MemcacheApi implements Serializable
      * @see Memcache::set()
      *
      * @param string $key       The key.
-     * @param string|Serializable $var       The data to store.
+     * @param mixed $var       The data to store.
      * @param int $expire  Expiration time in seconds.
      *
      * @return bool  True on success.
      */
-    public function set(string $key, $var, int $expire = 0): bool
+    /**
+     * Set item with large item support.
+     *
+     * @implements HordeMemcacheInterface
+     *
+     * Horde Extended API: Automatically splits items >1MB into multiple keys
+     * using flag bits to track part count for reassembly by getLarge().
+     *
+     * @param string $key     The cache key.
+     * @param mixed $var      The data to store.
+     * @param int $expire     Expiration time in seconds (0 = no expiration).
+     *
+     * @return bool  True on success.
+     */
+    public function setLarge(string $key, $var, int $expire = 0): bool
     {
-        return $this->_set($key, @serialize($var), $expire);
+        return $this->_set($key, $this->serializeValue($var, $key), $expire);
     }
 
     /**
@@ -382,18 +640,62 @@ class MemcacheApi implements Serializable
             return false;
         }
 
-        for ($i = 0; ($i * self::MAX_SIZE) < $len; ++$i) {
-            $curr_key = $i ? ($key . '_s' . $i) : $key;
-            $res = $this->memcache instanceof Memcached
-                ? $this->memcache->set($curr_key, $var, $expire)
-                : $this->memcache->set(
-                    $this->_key($curr_key),
-                    substr($var, $i * self::MAX_SIZE, self::MAX_SIZE),
-                    $this->_getFlags($i ? 0 : ceil($len / self::MAX_SIZE)),
+        if ($this->memcache instanceof Memcached) {
+            // Memcached: Use metadata + chunks approach
+            if ($len <= self::MAX_SIZE) {
+                // Small item - single set
+                $res = $this->memcache->set($this->_key($key), $var, $expire);
+                if ($res !== false) {
+                    unset($this->noexist[$key]);
+                }
+                return $res;
+            }
+
+            // Large item - split into chunks
+            $chunk_count = (int) ceil($len / self::MAX_SIZE);
+
+            // Store metadata with chunk count
+            $res = $this->memcache->set(
+                $this->_key($key . ':meta'),
+                $chunk_count,
+                $expire
+            );
+            if ($res === false) {
+                return false;
+            }
+
+            // Store each chunk
+            for ($i = 0; $i < $chunk_count; ++$i) {
+                $chunk = substr($var, $i * self::MAX_SIZE, self::MAX_SIZE);
+                $res = $this->memcache->set(
+                    $this->_key($key . ':chunk:' . $i),
+                    $chunk,
                     $expire
                 );
+                if ($res === false) {
+                    // Cleanup on failure
+                    $this->memcache->delete($this->_key($key . ':meta'));
+                    for ($j = 0; $j < $i; ++$j) {
+                        $this->memcache->delete($this->_key($key . ':chunk:' . $j));
+                    }
+                    return false;
+                }
+            }
+            unset($this->noexist[$key]);
+            return true;
+        }
+
+        // Memcache: Use flags-based approach (original implementation)
+        for ($i = 0; ($i * self::MAX_SIZE) < $len; ++$i) {
+            $curr_key = $i ? ($key . '_s' . $i) : $key;
+            $res = $this->memcache->set(
+                $this->_key($curr_key),
+                substr($var, $i * self::MAX_SIZE, self::MAX_SIZE),
+                $this->_getFlags($i ? 0 : ceil($len / self::MAX_SIZE)),
+                $expire
+            );
             if ($res === false) {
-                $this->delete($key);
+                $this->deleteDelayed($key, 0);
                 break;
             }
             unset($this->noexist[$curr_key]);
@@ -408,14 +710,14 @@ class MemcacheApi implements Serializable
      * @see Memcache::replace()
      *
      * @param string $key       The key.
-     * @param string|Serializable $var       The data to store.
+     * @param mixed $var       The data to store.
      * @param int $expire  Expiration time in seconds.
      *
      * @return bool  True on success, false if key doesn't exist.
      */
     public function replace(string $key, $var, int $expire = 0): bool
     {
-        $var = @serialize($var);
+        $var = $this->serializeValue($var, $key);
         $len = strlen($var);
 
         if ($len > self::MAX_SIZE) {
@@ -474,17 +776,19 @@ class MemcacheApi implements Serializable
      * Small wrapper around Memcache[d]#add().
      *
      * @param string $key  The key to lock.
+     *
+     * @return bool  True if lock acquired, false otherwise.
      */
-    protected function _lockAdd(string $key)
+    protected function _lockAdd(string $key): bool
     {
         if ($this->memcache instanceof Memcached) {
-            $this->memcache->add(
+            return $this->memcache->add(
                 $this->_key($key . self::LOCK_SUFFIX),
                 1,
                 self::LOCK_TIMEOUT
             );
         } else {
-            $this->memcache->add(
+            return $this->memcache->add(
                 $this->_key($key . self::LOCK_SUFFIX),
                 1,
                 0,
@@ -533,15 +837,21 @@ class MemcacheApi implements Serializable
      * @param string $host   Hostname.
      * @param integer $port  Port.
      *
-     * @throws MemcacheException
+     * @throws ConnectionException
      */
-    public function failover(string $host, int $port)
+    public function failover(string $host, int $port): void
     {
         $pos = array_search($host . ':' . $port, $this->servers);
         if ($pos !== false) {
             unset($this->servers[$pos]);
             if (!count($this->servers)) {
-                throw new MemcacheException('Could not connect to any defined memcache servers.');
+                $this->logger->critical('All memcache servers failed', [
+                    'last_server' => $host . ':' . $port,
+                ]);
+                throw new ConnectionException(
+                    'Could not connect to any defined memcache servers.',
+                    $this->params['hostspec']
+                );
             }
         }
     }
@@ -589,6 +899,70 @@ class MemcacheApi implements Serializable
             ? 0
             : MEMCACHE_COMPRESSED;
         return ($flags | $count << self::FLAGS_RESERVED);
+    }
+
+    /**
+     * Serialize a value for storage.
+     *
+     * Handles errors properly and logs failures.
+     *
+     * @param mixed $value  Value to serialize.
+     * @param string $key  Cache key (for error reporting).
+     *
+     * @return string  Serialized value.
+     *
+     * @throws SerializationException
+     */
+    protected function serializeValue(mixed $value, string $key): string
+    {
+        try {
+            return serialize($value);
+        } catch (Throwable $e) {
+            $this->logger->error('Serialization failed', [
+                'key' => $key,
+                'type' => get_debug_type($value),
+                'exception' => $e->getMessage(),
+            ]);
+            throw new SerializationException(
+                "Failed to serialize value for key '{$key}'",
+                $key,
+                $value,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Unserialize a value from storage.
+     *
+     * Handles errors properly and logs failures.
+     *
+     * @param string $data  Serialized data.
+     * @param string $key  Cache key (for error reporting).
+     *
+     * @return mixed  Unserialized value.
+     *
+     * @throws DeserializationException
+     */
+    protected function unserializeValue(string $data, string $key): mixed
+    {
+        try {
+            // Security: Allow all classes for backward compatibility
+            // Consider restricting with allowed_classes in future
+            return unserialize($data, ['allowed_classes' => true]);
+        } catch (Throwable $e) {
+            $this->logger->warning('Deserialization failed', [
+                'key' => $key,
+                'dataLength' => strlen($data),
+                'exception' => $e->getMessage(),
+            ]);
+            throw new DeserializationException(
+                "Failed to unserialize value for key '{$key}'",
+                $key,
+                $data,
+                $e
+            );
+        }
     }
 
     /* Serializable methods. */
@@ -643,9 +1017,57 @@ class MemcacheApi implements Serializable
      *
      * @throws MemcacheException
      */
-    public function unserialize($data)
+    public function unserialize($data): void
     {
-        $data = @unserialize($data);
+        try {
+            $data = unserialize($data, ['allowed_classes' => true]);
+        } catch (Throwable $e) {
+            throw new MemcacheException('Failed to unserialize MemcacheApi', 0, $e);
+        }
         $this->__unserialize($data);
+    }
+
+    /**
+     * Convert PSR-16 TTL to seconds.
+     *
+     * @param null|int|DateInterval $ttl  The TTL value.
+     *
+     * @return int  Expiration time in seconds (0 = no expiration).
+     */
+    protected function convertTtl(int|DateInterval|null $ttl): int
+    {
+        if ($ttl === null) {
+            return 0;  // No expiration
+        }
+
+        if ($ttl instanceof DateInterval) {
+            $now = new DateTimeImmutable();
+            $then = $now->add($ttl);
+            return $then->getTimestamp() - $now->getTimestamp();
+        }
+
+        return $ttl;
+    }
+
+    /**
+     * Fetch single key without oversized support (for PSR-16).
+     *
+     * Used by PSR-16 get() and has() methods. Does NOT handle oversized items.
+     *
+     * @param string $key  The cache key.
+     *
+     * @return mixed  The cached value or false on miss.
+     */
+    protected function fetchSingleStandard(string $key): mixed
+    {
+        $mc_key = $this->_key($key);
+        $result = $this->memcache->get($mc_key);
+
+        if ($result === false) {
+            $this->noexist[$key] = true;
+            return false;
+        }
+
+        return $this->unserializeValue($result, $key);
     }
 }
