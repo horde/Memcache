@@ -1,6 +1,7 @@
 <?php
+
 /**
- * Copyright 2020-2021 Horde LLC (http://www.horde.org/)
+ * Copyright 2020-2026 Horde LLC (http://www.horde.org/)
  *
  * See the enclosed file LICENSE for license information (LGPL). If you
  * did not receive this file, see http://www.horde.org/licenses/lgpl21.
@@ -10,24 +11,30 @@
  * @package  Memcache
  */
 declare(strict_types=1);
- namespace Horde\Memcache\Test;
+
+namespace Horde\Memcache\Test;
+
 use Horde\Memcache\MemcacheApi;
 use Horde\Test\TestCase;
+
+/**
+ * @coversNothing
+ */
 class MemcacheTest extends TestCase
 {
-    function setUp(): void
+    public function setUp(): void
     {
         if (!(extension_loaded('memcache') || extension_loaded('memcached'))) {
-            $this->markTestSkipped('Neither Memcache nor Memcached extension loaded'); 
+            $this->markTestSkipped('Neither Memcache nor Memcached extension loaded');
             return;
         }
-        if (!($config = self::getConfig('TEST_CONFIG')) ||
-            !isset($config['memcache'])) {
-                $this->markTestSkipped('No configuration available, set TEST_CONFIG env var'); 
+        if (!($config = self::getConfig('TEST_CONFIG'))
+            || !isset($config['memcache'])) {
+            $this->markTestSkipped('No configuration available, set TEST_CONFIG env var');
             return;
         }
-/*        $config['memcache']
-                ['prefix' => 'horde_cache_test']*/
+        /*        $config['memcache']
+                        ['prefix' => 'horde_cache_test']*/
         $this->cache = new MemcacheApi($config);
     }
 
@@ -59,7 +66,7 @@ class MemcacheTest extends TestCase
         $this->assertEquals(
             [
                 'TESTKEY1' => 100,
-                'TESTKEY2' => 200
+                'TESTKEY2' => 200,
             ],
             $this->cache->get(['TESTKEY1', 'TESTKEY2'])
         );

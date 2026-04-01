@@ -1,6 +1,7 @@
 <?php
+
 /**
- * Copyright 2007-2021 Horde LLC (http://www.horde.org/)
+ * Copyright 2007-2026 Horde LLC (http://www.horde.org/)
  *
  * See the enclosed file LICENSE for license information (LGPL). If you
  * did not receive this file, see http://www.horde.org/licenses/lgpl21.
@@ -203,8 +204,8 @@ class MemcacheApi implements Serializable
             throw new MemcacheException('Could not connect to any defined memcache servers.');
         }
 
-        if ($this->memcache instanceof Memcache &&
-            !empty($this->params['c_threshold'])) {
+        if ($this->memcache instanceof Memcache
+            && !empty($this->params['c_threshold'])) {
             $this->memcache->setCompressThreshold($this->params['c_threshold']);
         }
 
@@ -264,7 +265,7 @@ class MemcacheApi implements Serializable
         $search_keys = $keys;
 
         foreach ($search_keys as $v) {
-            $key_map[$v] = (string)$this->_key($v);
+            $key_map[$v] = (string) $this->_key($v);
         }
 
         if ($this->memcache instanceof Memcached) {
@@ -284,21 +285,21 @@ class MemcacheApi implements Serializable
                     : -1;
 
                 switch ($part_count) {
-                case -1:
-                    /* Ignore. */
-                    unset($res[$val]);
-                    break;
+                    case -1:
+                        /* Ignore. */
+                        unset($res[$val]);
+                        break;
 
-                case 0:
-                    /* Not an oversize part. */
-                    break;
+                    case 0:
+                        /* Not an oversize part. */
+                        break;
 
-                default:
-                    $os[$key] = $this->_getOSKeyArray($key, $part_count);
-                    foreach ($os[$key] as $val2) {
-                        $missing_parts[] = $key_map[$val2] = $this->_key($val2);
-                    }
-                    break;
+                    default:
+                        $os[$key] = $this->_getOSKeyArray($key, $part_count);
+                        foreach ($os[$key] as $val2) {
+                            $missing_parts[] = $key_map[$val2] = $this->_key($val2);
+                        }
+                        break;
                 }
             }
 
@@ -418,8 +419,8 @@ class MemcacheApi implements Serializable
         $len = strlen($var);
 
         if ($len > self::MAX_SIZE) {
-            if (!empty($this->params['large_items']) &&
-                $this->memcache->get($this->_key($key))) {
+            if (!empty($this->params['large_items'])
+                && $this->memcache->get($this->_key($key))) {
                 return $this->_set($key, $var, $expire, $len);
             }
             return false;
@@ -615,9 +616,9 @@ class MemcacheApi implements Serializable
     public function unserialize($data)
     {
         $data = @unserialize($data);
-        if (!is_array($data) ||
-            !isset($data[0]) ||
-            ($data[0] != self::VERSION)) {
+        if (!is_array($data)
+            || !isset($data[0])
+            || ($data[0] != self::VERSION)) {
             throw new MemcacheException('Cache version change');
         }
 
