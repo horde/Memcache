@@ -365,6 +365,7 @@ class Horde_Memcache implements Serializable
      */
     protected function _set($key, $var, $expire = 0, $len = null)
     {
+        $res = false;
         if (is_null($len)) {
             $len = strlen($var);
         }
