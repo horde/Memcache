@@ -3,8 +3,9 @@ id: Memcache
 name: Memcache
 full: Memcache client library
 description: >-
-  A standalone library for accessing a memcache installation. Consider using
-  horde/hashtable interface instead.
+  PSR-16 Simple Cache implementation for memcache with Horde-specific extensions.
+  Supports large items (>1MB), multi-key retrieval, and both Memcache/Memcached
+  PHP extensions.
 list: dev
 type: library
 homepage: https://www.horde.org/libraries/Horde_Memcache
@@ -26,9 +27,11 @@ license:
   uri: http://www.horde.org/licenses/lgpl21
 dependencies:
   required:
-    php: ^7 || ^8
+    php: ^8.2
     composer:
       horde/exception: ^3
+      psr/simple-cache: ^3.0
+      psr/log: ^3.0
     ext:
       hash: '*'
   optional:
@@ -39,6 +42,13 @@ dependencies:
     composer:
       horde/test: ^3
       horde/log: ^3
+provide:
+  psr/simple-cache-implementation: '1.0'
 keywords:
   - in-memory
+  - psr-16
 vendor: horde
+
+quality:
+  phpstan:
+    level: 3
