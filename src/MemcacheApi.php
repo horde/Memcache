@@ -594,28 +594,27 @@ class MemcacheApi implements Serializable
     /* Serializable methods. */
 
     /**
-     * Serialize.
+     * Serialize (magic method for PHP 7.4+).
      *
-     * @return string  Serialized representation of this object.
+     * @return array  Data to serialize.
      */
-    public function serialize(): string
+    public function __serialize(): array
     {
-        return serialize([
+        return [
             self::VERSION,
             $this->params,
-        ]);
+        ];
     }
 
     /**
-     * Unserialize.
+     * Unserialize (magic method for PHP 7.4+).
      *
-     * @param string $data  Serialized data.
+     * @param array $data  Serialized data.
      *
      * @throws MemcacheException
      */
-    public function unserialize($data)
+    public function __unserialize(array $data): void
     {
-        $data = @unserialize($data);
         if (!is_array($data)
             || !isset($data[0])
             || ($data[0] != self::VERSION)) {
@@ -625,5 +624,28 @@ class MemcacheApi implements Serializable
         $this->params = $data[1];
 
         $this->init();
+    }
+
+    /**
+     * Serialize (Serializable interface - PHP 7 compatibility).
+     *
+     * @return string  Serialized representation of this object.
+     */
+    public function serialize(): string
+    {
+        return serialize($this->__serialize());
+    }
+
+    /**
+     * Unserialize (Serializable interface - PHP 7 compatibility).
+     *
+     * @param string $data  Serialized data.
+     *
+     * @throws MemcacheException
+     */
+    public function unserialize($data)
+    {
+        $data = @unserialize($data);
+        $this->__unserialize($data);
     }
 }
