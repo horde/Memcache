@@ -12,16 +12,17 @@
         }
     ],
     "keywords": [
-        "in-memory"
+        "in-memory",
+        "psr-16"
     ],
     "time": "2026-04-01",
     "repositories": [],
     "require": {
-        "php": "^7 || ^8",
+        "php": "^8.2",
         "horde/exception": "^3 || dev-FRAMEWORK_6_0",
-        "ext-hash": "*",
-        "psr/log": "^1.0 || ^2.0 || ^3.0",
-        "psr/simple-cache": "^1.0 || ^2.0 || ^3.0"
+        "psr/simple-cache": "^3.0",
+        "psr/log": "^3.0",
+        "ext-hash": "*"
     },
     "require-dev": {
         "horde/test": "^3 || dev-FRAMEWORK_6_0",
