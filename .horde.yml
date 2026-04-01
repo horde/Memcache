@@ -2,7 +2,9 @@
 id: Memcache
 name: Memcache
 full: Memcache client library
-description: A library for accessing a memcache installation.
+description: >-
+  A standalone library for accessing a memcache installation. Consider using
+  horde/hashtable interface instead.
 list: dev
 type: library
 homepage: https://www.horde.org/libraries/Horde_Memcache
@@ -14,10 +16,10 @@ authors:
     active: false
     role: lead
 version:
-  release: 3.0.0alpha3
+  release: 3.0.0-beta1
   api: 1.1.0
 state:
-  release: alpha
+  release: beta
   api: stable
 license:
   identifier: LGPL-2.1
@@ -37,3 +39,6 @@ dependencies:
     composer:
       horde/test: ^3
       horde/log: ^3
+keywords:
+  - in-memory
+vendor: horde
