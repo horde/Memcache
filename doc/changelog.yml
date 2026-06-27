@@ -1,37 +1,14 @@
 ---
-3.0.0alpha3:
-  api: 1.1.0
+3.0.0:
+  api: 3.0.0
   state:
-    release: alpha
-    api: alpha
-  date: 2021-07-04
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |+
-3.0.0alpha2:
-  api: 1.1.0
-  state:
-    release: alpha
-    api: alpha
-  date: 2021-07-04
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [rla] Converted to namespaced code, enabled PHP8 compatibility
-    |+
-3.0.0alpha1:
-  api: 1.1.0
-  state:
-    release: alpha
+    release: stable
     api: stable
-  date: 2021-07-04
+  date: 2026-06-27
   license:
     identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [rla] Package for H6 / composer installer.
+    uri: https://spdx.org/licenses/LGPL-2.1.html
+  notes: "chore: refresh qc fixes and platform deps\nchore: Update workflow dependency"
 3.0.0-beta2:
   api: 3.0.0-beta2
   state:
@@ -41,12 +18,7 @@
   license:
     identifier: LGPL-2.1
     uri: https://spdx.org/licenses/LGPL-2.1.html
-  notes: |-
-    doc: Document upgrade path from horde/memcache lib (H5ish) to src/ (PSR-16)
-    test: Update phpunit tests and split integration tests from unit tests.
-    feat: Implement a PSR-16 modern interface and extra Horde interface
-    fix: Missing initialization of $res
-    fix: Same serialization update in PSR-4 version
+  notes: "doc: Document upgrade path from horde/memcache lib (H5ish) to src/ (PSR-16)\ntest: Update phpunit tests and split integration tests from unit tests.\nfeat: Implement a PSR-16 modern interface and extra Horde interface\nfix: Missing initialization of $res\nfix: Same serialization update in PSR-4 version"
 3.0.0-beta1:
   api: 3.0.0-beta1
   state:
@@ -56,11 +28,37 @@
   license:
     identifier: LGPL-2.1
     uri: https://spdx.org/licenses/LGPL-2.1.html
-  notes: |-
-    style: php-cs-fixer
-    fix: php8.x compatible serialization
-    Fix workflows
-    Development mode for Memcache-3.0.0alpha3
+  notes: "style: php-cs-fixer\nfix: php8.x compatible serialization\nFix workflows\nDevelopment mode for Memcache-3.0.0alpha3"
+3.0.0alpha3:
+  api: 1.1.0
+  state:
+    release: alpha
+    api: alpha
+  date: 2021-07-04
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: ''
+3.0.0alpha2:
+  api: 1.1.0
+  state:
+    release: alpha
+    api: alpha
+  date: 2021-07-04
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "[rla] Converted to namespaced code, enabled PHP8 compatibility\n|+\n"
+3.0.0alpha1:
+  api: 1.1.0
+  state:
+    release: alpha
+    api: stable
+  date: 2021-07-04
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "[rla] Package for H6 / composer installer.\n"
 2.1.2:
   api: 1.1.0
   state:
@@ -70,8 +68,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mjr] Fix incorrect ordering of implode parameters for PHP 8.0
+  notes: "[mjr] Fix incorrect ordering of implode parameters for PHP 8.0\n"
 2.1.1:
   api: 1.1.0
   state:
@@ -81,8 +78,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [jan] Fix setting compression threshold when using the memcache extension (Bug #14421).
+  notes: "[jan] Fix setting compression threshold when using the memcache extension (Bug #14421).\n"
 2.1.0:
   api: 1.1.0
   state:
@@ -92,9 +88,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [jan] Fix locking.
-    [jan] Add support for memcached extension and PHP 7.
+  notes: "[jan] Fix locking.\n[jan] Add support for memcached extension and PHP 7.\n"
 2.0.7:
   api: 1.1.0
   state:
@@ -104,8 +98,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Fix race condition where memcache lock could be removed before the underlying locked data could be updated.
+  notes: "[mms] Fix race condition where memcache lock could be removed before the underlying locked data could be updated.\n"
 2.0.6:
   api: 1.1.0
   state:
@@ -115,8 +108,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Ramp up to the maximum unlock wait interval (Request #13231).
+  notes: "[mms] Ramp up to the maximum unlock wait interval (Request #13231).\n"
 2.0.5:
   api: 1.1.0
   state:
@@ -126,8 +118,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [jan] Fixed connection to Memcache servers.
+  notes: "[jan] Fixed connection to Memcache servers.\n"
 2.0.4:
   api: 1.1.0
   state:
@@ -137,9 +128,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Immediately throw exception when no servers can be connected to.
-    [mms] No need to serialize logging object twice.
+  notes: "[mms] Immediately throw exception when no servers can be connected to.\n[mms] No need to serialize logging object twice.\n"
 2.0.3:
   api: 1.1.0
   state:
@@ -149,8 +138,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Fix handling of large items (João Machado <geral@jpaulo.eu>).
+  notes: "[mms] Fix handling of large items (João Machado <geral@jpaulo.eu>).\n"
 2.0.2:
   api: 1.1.0
   state:
@@ -160,8 +148,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [jan] Improve dependency detection.
+  notes: "[jan] Improve dependency detection.\n"
 2.0.1:
   api: 1.1.0
   state:
@@ -171,30 +158,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Use new Horde_Test layout.
-2.0.0beta1:
-  api: 1.1.0
-  state:
-    release: beta
-    api: stable
-  date: 2012-07-19
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First beta release for Horde 5.
-2.0.0alpha1:
-  api: 1.1.0
-  state:
-    release: alpha
-    api: stable
-  date: 2012-07-05
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First alpha release for Horde 5.
+  notes: "[mms] Use new Horde_Test layout.\n"
 2.0.0:
   api: 1.1.0
   state:
@@ -204,8 +168,27 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First stable release for Horde 5.
+  notes: "First stable release for Horde 5.\n"
+2.0.0beta1:
+  api: 1.1.0
+  state:
+    release: beta
+    api: stable
+  date: 2012-07-19
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "First beta release for Horde 5.\n"
+2.0.0alpha1:
+  api: 1.1.0
+  state:
+    release: alpha
+    api: stable
+  date: 2012-07-05
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "First alpha release for Horde 5.\n"
 1.1.1:
   api: 1.1.0
   state:
@@ -215,9 +198,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Increase lock timeout to 30 seconds.
-    [mms] Fix typo preventing unlock at exit from working correctly.
+  notes: "[mms] Increase lock timeout to 30 seconds.\n[mms] Fix typo preventing unlock at exit from working correctly.\n"
 1.1.0:
   api: 1.1.0
   state:
@@ -227,8 +208,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Automatically expire locks when the PHP process exits.
+  notes: "[mms] Automatically expire locks when the PHP process exits.\n"
 1.0.5:
   api: 1.0.0
   state:
@@ -238,8 +218,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Bump lock retry from 0.005s -> 0.1s.
+  notes: "[mms] Bump lock retry from 0.005s -> 0.1s.\n"
 1.0.4:
   api: 1.0.0
   state:
@@ -249,8 +228,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Silence undefined errors when a search key is not found on the server.
+  notes: "[mms] Silence undefined errors when a search key is not found on the server.\n"
 1.0.3:
   api: 1.0.0
   state:
@@ -260,8 +238,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] pecl/Memcache version 3.0.3 upwards started to reserve the first 16 bits for internal flag use (Ticket #10123; goncalo.queiros@portugalmail.net).
+  notes: "[mms] pecl/Memcache version 3.0.3 upwards started to reserve the first 16 bits for internal flag use (Ticket #10123; goncalo.queiros@portugalmail.net).\n"
 1.0.2:
   api: 1.0.0
   state:
@@ -271,8 +248,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [mms] Use memcache flags to keep track of large objects (goncalo.queiros@portugalmail.net, Request #10123).
+  notes: "[mms] Use memcache flags to keep track of large objects (goncalo.queiros@portugalmail.net, Request #10123).\n"
 1.0.1:
   api: 1.0.0
   state:
@@ -282,53 +258,7 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    [jan] Fix dependency.
-1.0.0beta1:
-  api: 1.0.0
-  state:
-    release: beta
-    api: beta
-  date: 2011-03-16
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First beta release for Horde 4.
-1.0.0alpha1:
-  api: 1.0.0
-  state:
-    release: alpha
-    api: alpha
-  date: 2011-03-08
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First alpha release for Horde 4.
-    Remove Horde_Core dependency.
-1.0.0RC2:
-  api: 1.0.0
-  state:
-    release: beta
-    api: beta
-  date: 2011-03-29
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    Second release candidate for Horde 4.
-1.0.0RC1:
-  api: 1.0.0
-  state:
-    release: beta
-    api: beta
-  date: 2011-03-22
-  license:
-    identifier: LGPL-2.1
-    uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First release candidate for Horde 4.
+  notes: "[jan] Fix dependency.\n"
 1.0.0:
   api: 1.0.0
   state:
@@ -338,5 +268,44 @@
   license:
     identifier: LGPL-2.1
     uri: http://www.horde.org/licenses/lgpl21
-  notes: |
-    First stable release for Horde 4.
+  notes: "First stable release for Horde 4.\n"
+1.0.0RC2:
+  api: 1.0.0
+  state:
+    release: beta
+    api: beta
+  date: 2011-03-29
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "Second release candidate for Horde 4.\n"
+1.0.0RC1:
+  api: 1.0.0
+  state:
+    release: beta
+    api: beta
+  date: 2011-03-22
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "First release candidate for Horde 4.\n"
+1.0.0beta1:
+  api: 1.0.0
+  state:
+    release: beta
+    api: beta
+  date: 2011-03-16
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "First beta release for Horde 4.\n"
+1.0.0alpha1:
+  api: 1.0.0
+  state:
+    release: alpha
+    api: alpha
+  date: 2011-03-08
+  license:
+    identifier: LGPL-2.1
+    uri: http://www.horde.org/licenses/lgpl21
+  notes: "First alpha release for Horde 4.\nRemove Horde_Core dependency.\n"
